@@ -44,7 +44,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 // FlyCapture SDK from Point Grey
 #include "flycapture/FlyCapture2.h"
-#include <flycapture/FlyCapture2Defs.h>
+#include "flycapture/FlyCapture2Defs.h"
 
 //time sync
 #include "pointgrey_camera_driver/TimeSyncEKF.h"
