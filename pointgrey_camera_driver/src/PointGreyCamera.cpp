@@ -983,22 +983,22 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
     TimeStamp currentTime = rawImage.GetTimeStamp();
     int delta_cycle_seconds = currentTime.cycleSeconds - last_timestamp_.cycleSeconds;
     if(delta_cycle_seconds < 0){
-      delta_cycle_seconds += 128;
+      delta_cycle_seconds += kMaxCycleSeconds;
     }
 
     int delta_cycle_count = currentTime.cycleCount - last_timestamp_.cycleCount;
     if(delta_cycle_count < 0){
-      delta_cycle_count += 8000;
+      delta_cycle_count += kMaxCycleCount;
     }
 
-    comulative_timestamp_.microSeconds += delta_cycle_count*125; //will go over 1e6
-    comulative_timestamp_.seconds += delta_cycle_seconds;
-    comulative_timestamp_.microSeconds = comulative_timestamp_.microSeconds%1000000;
+    cumulative_timestamp_.microSeconds += delta_cycle_count*kCycleCountToUS; //will go over 1e6
+    cumulative_timestamp_.seconds += delta_cycle_seconds;
+    cumulative_timestamp_.microSeconds = cumulative_timestamp_.microSeconds%kSecondToUS;
 
     last_timestamp_ = currentTime;
 
     //get time in local clock
-    double device_time = comulative_timestamp_.seconds + comulative_timestamp_.microSeconds*1.0e-6;
+    double device_time = cumulative_timestamp_.seconds + cumulative_timestamp_.microSeconds*1.0/kSecondToUS;
     double local_time = ros::Time::now().toSec();
 
     timesync_.updateFilter(device_time, local_time);
