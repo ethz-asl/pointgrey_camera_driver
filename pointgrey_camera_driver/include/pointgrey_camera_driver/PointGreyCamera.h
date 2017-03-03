@@ -198,6 +198,11 @@ private:
   unsigned int packet_delay_;
 
   //time sync
+  static const int kMaxCycleSeconds = 128;
+  static const int kMaxCycleCount = 8000;
+  static const int kSecondToUS = 1000000;
+  static const int kCycleCountToUS = 125;
+   
   FlyCapture2::TimeStamp last_timestamp_;
   FlyCapture2::TimeStamp cumulative_timestamp_;
 
