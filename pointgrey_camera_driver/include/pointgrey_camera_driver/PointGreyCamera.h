@@ -199,7 +199,7 @@ private:
 
   //time sync
   FlyCapture2::TimeStamp last_timestamp_;
-  FlyCapture2::TimeStamp comulative_timestamp_;
+  FlyCapture2::TimeStamp cumulative_timestamp_;
 
   time_sync::TimeSyncEKF timesync_;
 
