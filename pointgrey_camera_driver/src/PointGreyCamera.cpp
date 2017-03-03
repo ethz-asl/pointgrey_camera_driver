@@ -129,6 +129,9 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
   // Set gamma
   retVal &= PointGreyCamera::setProperty(GAMMA, false, config.gamma);
 
+  // Set saturation
+  retVal &= PointGreyCamera::setProperty(SATURATION, false, config.saturation);
+
   // Set white balance
   uint16_t blue = config.white_balance_blue;
   uint16_t red = config.white_balance_red;
@@ -429,6 +432,10 @@ bool PointGreyCamera::getFormat7PixelFormatFromString(std::string &sformat, FlyC
     else if(sformat.compare("mono16") == 0)
     {
       fmt7PixFmt = PIXEL_FORMAT_MONO16;
+    }
+    else if(sformat.compare("rgb8") == 0)
+    {
+      fmt7PixFmt = PIXEL_FORMAT_RGB8;
     }
     else
     {
@@ -989,8 +996,13 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
 
     // Set the image encoding
     std::string imageEncoding = sensor_msgs::image_encodings::MONO8;
+    PixelFormat pixel_format = rawImage.GetPixelFormat();
     BayerTileFormat bayer_format = rawImage.GetBayerTileFormat();
-    if(isColor_ && bayer_format != NONE)
+    if (pixel_format == PIXEL_FORMAT_RGB8) {
+      // Camera-preprocessed image in RGB8 encoding.
+      imageEncoding = sensor_msgs::image_encodings::RGB8;
+    }
+    else if(isColor_ && bayer_format != NONE)   // Bayer pattern encoded images.
     {
       if(bitsPerPixel == 16)
       {
