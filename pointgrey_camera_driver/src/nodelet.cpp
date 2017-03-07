@@ -242,7 +242,7 @@ private:
       pg_.setUseConvexhullTimesync(use_convex_hull_time_sync);
       double convex_hull_switching_time;
       pnh.param<double>("convex_hull_switching_time", convex_hull_switching_time, pg_.getConvexHullSwitchingTime());
-      pg_.setUseConvexhullTimesync(convex_hull_switching_time);
+      pg_.setConvexHullSwitchingTime(convex_hull_switching_time);
       if(use_convex_hull_time_sync) {
         NODELET_INFO("Using convex hull time synchronization algorithm with switching time %g.", pg_.getConvexHullSwitchingTime());
       }
