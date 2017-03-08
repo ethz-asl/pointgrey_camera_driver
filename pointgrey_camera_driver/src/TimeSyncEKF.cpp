@@ -7,7 +7,7 @@ namespace time_sync{
  constexpr double TimeSyncEKF::kSigmaMeasurementTimeOffset;
  constexpr double TimeSyncEKF::kSigmaSkew;
  constexpr double TimeSyncEKF::kUpdateRate;
-
+ constexpr double TimeSyncEKF::kOutlierThreshold;
 
 TimeSyncEKF::TimeSyncEKF():
     isInitialized_(false) {
@@ -64,6 +64,13 @@ void TimeSyncEKF::updateFilter(double device_time, double local_time) {
 
   double measurement_residual = local_time - device_time - H_ * x_;
 
+  double mahal_distance = sqrt(measurement_residual*measurement_residual*(1.0/S));
+
+  if(mahal_distance > kOutlierThreshold){
+    ROS_WARN("TimeSync EKF: Outlier detected.");
+    return;
+  }
+
   x_ = x_ + K * measurement_residual;
   P_ = (Eigen::Matrix2d::Identity() - K * H_) * P_;
 
@@ -90,6 +97,10 @@ void TimeSyncEKF::initialize(double device_time, double local_time){
 
   lastUpdateDeviceTime_ = device_time;
   isInitialized_ = true;
+}
+
+bool TimeSyncEKF::isOutlier(double device_time, double local_time){
+
 }
 
 }
