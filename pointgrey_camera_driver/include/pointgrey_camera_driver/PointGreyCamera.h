@@ -49,6 +49,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 //time sync
 #include "pointgrey_camera_driver/TimeSyncEKF.h"
 
+#include "TimestampCorrector.hpp"
+
 class PointGreyCamera
 {
 
@@ -176,6 +178,17 @@ public:
 
   uint getROIPosition();
 
+  void setUseConvexhullTimesync(bool useConvexhullTimesync) {
+    use_convexhull_timesync_ = useConvexhullTimesync;
+  }
+
+  double getConvexHullSwitchingTime() const {
+    return convex_hull_switching_time_;
+  }
+
+  void setConvexHullSwitchingTime(double convexHullSwitchingTime) {
+    convex_hull_switching_time_ = convexHullSwitchingTime;
+  }
 private:
 
   uint32_t serial_; ///< A variable to hold the serial number of the desired camera.
@@ -207,6 +220,9 @@ private:
   FlyCapture2::TimeStamp cumulative_timestamp_;
 
   time_sync::TimeSyncEKF timesync_;
+  sm::timing::TimestampCorrector<double> timestamp_corrector_;
+  bool use_convexhull_timesync_ = false;
+  double convex_hull_switching_time_ = 1000;
 
   /*!
   * \brief Changes the video mode of the connected camera.

@@ -236,6 +236,19 @@ private:
     pnh.param<bool>("auto_packet_size", auto_packet_size_, true);
     pnh.param<int>("packet_delay", packet_delay_, 4000);
 
+    {
+      bool use_convex_hull_time_sync;
+      pnh.param<bool>("use_convex_hull_time_sync", use_convex_hull_time_sync, false);
+      pg_.setUseConvexhullTimesync(use_convex_hull_time_sync);
+      double convex_hull_switching_time;
+      pnh.param<double>("convex_hull_switching_time", convex_hull_switching_time, pg_.getConvexHullSwitchingTime());
+      pg_.setConvexHullSwitchingTime(convex_hull_switching_time);
+      if(use_convex_hull_time_sync) {
+        NODELET_INFO("Using convex hull time synchronization algorithm with switching time %g.", pg_.getConvexHullSwitchingTime());
+      }
+    }
+
+
     // Set GigE parameters:
     pg_.setGigEParameters(auto_packet_size_, packet_size_, packet_delay_);
 

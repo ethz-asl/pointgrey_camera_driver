@@ -983,6 +983,9 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
     Image rawImage;
     // Retrieve an image
     Error error = cam_.RetrieveBuffer(&rawImage);
+    //get receive time in local clock
+    const double local_time = ros::Time::now().toSec();
+    
     PointGreyCamera::handleError("PointGreyCamera::grabImage Failed to retrieve buffer", error);
     metadata_ = rawImage.GetMetadata();
 
@@ -1004,13 +1007,15 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
 
     last_timestamp_ = currentTime;
 
-    //get time in local clock
     double device_time = cumulative_timestamp_.seconds + cumulative_timestamp_.microSeconds*1.0/kSecondToUS;
-    double local_time = ros::Time::now().toSec();
 
-    timesync_.updateFilter(device_time, local_time);
-    double updated_local_time = timesync_.getLocalTimestamp(device_time);
-
+    double updated_local_time;
+    if(use_convexhull_timesync_){
+      updated_local_time = timestamp_corrector_.correctTimestamp(device_time, local_time, convex_hull_switching_time_);
+    } else {
+      timesync_.updateFilter(device_time, local_time);
+      updated_local_time = timesync_.getLocalTimestamp(device_time);
+    }
     image.header.stamp = ros::Time(updated_local_time);
 
     // Check the bits per pixel.
