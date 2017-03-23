@@ -4,14 +4,14 @@ project(pointgrey_camera_driver)
 find_package(catkin REQUIRED COMPONENTS
   roscpp nodelet sensor_msgs wfov_camera_msgs
   image_exposure_msgs camera_info_manager image_transport
-  dynamic_reconfigure diagnostic_updater)
+  dynamic_reconfigure diagnostic_updater cuckoo_time_translator)
 
 generate_dynamic_reconfigure_options(
   cfg/PointGrey.cfg
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp nodelet
+  CATKIN_DEPENDS roscpp nodelet cuckoo_time_translator
 )
 
 # If the user has manually installed flycapture, use the system path version. If not,
