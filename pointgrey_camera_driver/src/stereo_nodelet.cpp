@@ -223,7 +223,8 @@ private:
     
     device_time_translator_.reset(new cuckoo_time_translator::DefaultDeviceTimeUnwrapperAndTranslator(
           pg_.getHwClockParameters(),
-          nh.getNamespace()
+          nh.getNamespace(),
+          cuckoo_time_translator::Defaults().setFilterAlgorithm(cuckoo_time_translator::FilterAlgorithm::Kalman)
         )
     );
     
