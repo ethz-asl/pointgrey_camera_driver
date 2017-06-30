@@ -15,7 +15,6 @@ class TimeSyncEKF
   static constexpr double kSigmaMeasurementTimeOffset = 2e-3;
   static constexpr double kSigmaSkew = 2e-6;
   static constexpr double kUpdateRate = 0.5;
-  static constexpr double kOutlierThreshold = 1.0;
 
   TimeSyncEKF();
   ~TimeSyncEKF();
