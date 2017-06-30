@@ -974,7 +974,41 @@ bool PointGreyCamera::stop()
   return false;
 }
 
-void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id)
+
+uint32_t PointGreyCamera::getCyclesPerSecond() const {
+  return 8000;
+}
+
+uint32_t PointGreyCamera::getCyleOffsetsPerCycle() const {
+  return 3072;
+}
+
+uint32_t PointGreyCamera::getHwClockFrequencyHz() const {
+  return getCyclesPerSecond() * getCyleOffsetsPerCycle();
+}
+
+uint64_t PointGreyCamera::getHwTimeWrapNumber() const {
+  return 128L * getHwClockFrequencyHz();
+}
+
+cuckoo_time_translator::WrappingClockParameters PointGreyCamera::getHwClockParameters() const {
+  return cuckoo_time_translator::WrappingClockParameters(
+              getHwTimeWrapNumber(), getHwClockFrequencyHz()
+            );
+}
+
+uint32_t PointGreyCamera::computeCameraTimeInCycleOffsetUnit(const TimeStamp& embeddedTime) const {
+  return (
+              (embeddedTime.cycleSeconds * getCyclesPerSecond())  // corresponding to 8000 cycles
+              +
+              embeddedTime.cycleCount
+          ) * getCyleOffsetsPerCycle() // each cycle corresponds to 3072 cycle offset units
+          + embeddedTime.cycleOffset;
+}
+
+
+
+void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id, uint32_t* hw_timestamp)
 {
   boost::mutex::scoped_lock scopedLock(mutex_);
   if(cam_.IsConnected() && captureRunning_)
@@ -990,6 +1024,10 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
     TimeStamp embeddedTime = rawImage.GetTimeStamp();
     image.header.stamp.sec = embeddedTime.seconds;
     image.header.stamp.nsec = 1000 * embeddedTime.microSeconds;
+
+    if(hw_timestamp){
+      *hw_timestamp = computeCameraTimeInCycleOffsetUnit(embeddedTime);
+    }
 
     // Check the bits per pixel.
     uint8_t bitsPerPixel = rawImage.GetBitsPerPixel();
@@ -1066,7 +1104,7 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
   }
 }
 
-void PointGreyCamera::grabStereoImage(sensor_msgs::Image &image, const std::string &frame_id, sensor_msgs::Image &second_image, const std::string &second_frame_id)
+void PointGreyCamera::grabStereoImage(sensor_msgs::Image &image, const std::string &frame_id, sensor_msgs::Image &second_image, const std::string &second_frame_id, uint32_t* hw_timestamp)
 {
   boost::mutex::scoped_lock scopedLock(mutex_);
   if(cam_.IsConnected() && captureRunning_)
@@ -1082,6 +1120,10 @@ void PointGreyCamera::grabStereoImage(sensor_msgs::Image &image, const std::stri
     TimeStamp embeddedTime = rawImage.GetTimeStamp();
     image.header.stamp.sec = embeddedTime.seconds;
     image.header.stamp.nsec = 1000 * embeddedTime.microSeconds;
+
+    if(hw_timestamp){
+      *hw_timestamp = computeCameraTimeInCycleOffsetUnit(embeddedTime);
+    }
 
     // GetBitsPerPixel returns 16, but that seems to mean "2 8 bit pixels,
     // one for each image". Therefore, we don't use it
