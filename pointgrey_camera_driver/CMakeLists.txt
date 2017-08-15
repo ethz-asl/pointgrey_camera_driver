@@ -64,6 +64,11 @@ target_link_libraries(pointgrey_list_cameras PointGreyCamera ${catkin_LIBRARIES}
 set_target_properties(pointgrey_list_cameras
                       PROPERTIES OUTPUT_NAME list_cameras PREFIX "")
 
+add_executable(debayered_camera_node src/debayered_camera_node.cpp)
+target_link_libraries(debayered_camera_node PointGreyCamera ${catkin_LIBRARIES})
+set_target_properties(debayered_camera_node
+                      PROPERTIES OUTPUT_NAME debayered_camera_node PREFIX "")
+
 install(TARGETS
   PointGreyCamera
   PointGreyCameraNodelet
@@ -71,6 +76,7 @@ install(TARGETS
   pointgrey_camera_node
   pointgrey_stereo_node
   pointgrey_list_cameras
+  debayered_camera_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
