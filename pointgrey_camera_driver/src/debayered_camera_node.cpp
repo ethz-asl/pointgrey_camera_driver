@@ -8,6 +8,8 @@ int main(int argc, char** argv) {
   nodelet::V_string nargv;
   nodelet::M_string remap(ros::names::getRemappings());
   remap["image_raw"] = ros::names::resolve("~/image_raw");
+  remap["image_mono"] = ros::names::resolve("~/image_mono");
+  remap["image_color"] = ros::names::resolve("~/image_color");
 
   std::string nodelet_name = ros::this_node::getName();
 
