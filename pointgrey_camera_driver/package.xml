@@ -22,6 +22,7 @@
   <depend>sensor_msgs</depend>
   <depend>wfov_camera_msgs</depend>
   <depend>image_exposure_msgs</depend>
+  <depend>image_numbered_msgs</depend>
   <depend>camera_info_manager</depend>
   <depend>image_transport</depend>
   <depend>dynamic_reconfigure</depend>
@@ -33,7 +34,7 @@
 
   <exec_depend>image_proc</exec_depend>
   <exec_depend>stereo_image_proc</exec_depend>
-  
+
   <test_depend>roslaunch</test_depend>
   <test_depend>roslint</test_depend>
 

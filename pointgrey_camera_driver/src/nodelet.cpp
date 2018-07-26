@@ -42,6 +42,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <wfov_camera_msgs/WFOVImage.h>
 #include <image_exposure_msgs/ExposureSequence.h> // Message type for configuring gain and white balance.
 
+#include <image_numbered_msgs/ImageNumbered.h>
+
 #include <diagnostic_updater/diagnostic_updater.h> // Headers for publishing diagnostic messages.
 #include <diagnostic_updater/publisher.h>
 
@@ -287,6 +289,9 @@ private:
     image_transport::SubscriberStatusCallback cb = boost::bind(&PointGreyCameraNodelet::connectCb, this);
     it_pub_ = it_->advertiseCamera("image_raw", 5, cb, cb);
 
+    // Publish image numbered.
+    img_numbered_pub_ = nh.advertise<image_numbered_msgs::ImageNumbered>("image_numbered", 5);
+
     // Set up diagnostics
     updater_.setHardwareID("pointgrey_camera " + cinfo_name.str());
 
@@ -518,6 +523,13 @@ private:
               sensor_msgs::ImagePtr image(new sensor_msgs::Image(wfov_image->image));
               it_pub_.publish(image, ci_);
             }
+            if(img_numbered_pub_.getNumSubscribers() > 0)
+            {
+              image_numbered_msgs::ImageNumberedPtr image(new image_numbered_msgs::ImageNumbered());
+              image->image = wfov_image->image;
+              image->number = pg_.getMetadata().embeddedFrameCounter;
+              img_numbered_pub_.publish(image);
+            }
           }
           catch(CameraTimeoutException& e)
           {
@@ -566,6 +578,7 @@ private:
   boost::shared_ptr<image_transport::ImageTransport> it_; ///< Needed to initialize and keep the ImageTransport in scope.
   boost::shared_ptr<camera_info_manager::CameraInfoManager> cinfo_; ///< Needed to initialize and keep the CameraInfoManager in scope.
   image_transport::CameraPublisher it_pub_; ///< CameraInfoManager ROS publisher
+  ros::Publisher img_numbered_pub_; ///< Image publisher that also publishes the associated embedded frame number.
   boost::shared_ptr<diagnostic_updater::DiagnosedPublisher<wfov_camera_msgs::WFOVImage> > pub_; ///< Diagnosed publisher, has to be a pointer because of constructor requirements
   ros::Subscriber sub_; ///< Subscriber for gain and white balance changes.
 

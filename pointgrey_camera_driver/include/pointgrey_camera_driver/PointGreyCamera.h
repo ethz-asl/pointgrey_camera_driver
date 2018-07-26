@@ -157,6 +157,11 @@ public:
   */
   float getCameraTemperature();
 
+  /*!
+   * \brief Get the metadata associated to the current image.
+   */
+  inline FlyCapture2::ImageMetadata getMetadata() const { return metadata_; }
+
   void setGain(double &gain);
 
   void setBRWhiteBalance(bool auto_white_balance, uint16_t &blue, uint16_t &red);
