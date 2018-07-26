@@ -162,7 +162,7 @@ private:
     NODELET_DEBUG("Connect callback!");
     boost::mutex::scoped_lock scopedLock(connect_mutex_); // Grab the mutex.  Wait until we're done initializing before letting this function through.
     // Check if we should disconnect (there are 0 subscribers to our data)
-    if(it_pub_.getNumSubscribers() == 0 && pub_->getPublisher().getNumSubscribers() == 0)
+    if(it_pub_.getNumSubscribers() == 0 && pub_->getPublisher().getNumSubscribers() == 0 && img_numbered_pub_.getNumSubscribers() == 0)
     {
       if (pubThread_)
       {
@@ -289,9 +289,6 @@ private:
     image_transport::SubscriberStatusCallback cb = boost::bind(&PointGreyCameraNodelet::connectCb, this);
     it_pub_ = it_->advertiseCamera("image_raw", 5, cb, cb);
 
-    // Publish image numbered.
-    img_numbered_pub_ = nh.advertise<image_numbered_msgs::ImageNumbered>("image_numbered", 5);
-
     // Set up diagnostics
     updater_.setHardwareID("pointgrey_camera " + cinfo_name.str());
 
@@ -313,6 +310,10 @@ private:
                updater_,
                diagnostic_updater::FrequencyStatusParam(&min_freq_, &max_freq_, freq_tolerance, window_size),
                diagnostic_updater::TimeStampStatusParam(min_acceptable, max_acceptable)));
+
+    // Publish image numbered.
+    ros::SubscriberStatusCallback cb3 = boost::bind(&PointGreyCameraNodelet::connectCb, this);
+    img_numbered_pub_ = nh.advertise<image_numbered_msgs::ImageNumbered>("image_numbered", 5, cb3, cb3);
   }
 
   /**
