@@ -2,4 +2,4 @@
 
 sensor_msgs/Image image
 uint32 number
-float exposure
+float32 exposure

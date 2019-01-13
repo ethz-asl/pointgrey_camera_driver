@@ -165,7 +165,7 @@ public:
   /*!
    * \brief Get the exposure time of the current image.
    */
-  inline float getExposureTime() const { return exposure_time_; }
+  inline double getExposureTime() const { return exposure_time_; }
 
   void setGain(double &gain);
 
@@ -189,7 +189,7 @@ private:
   FlyCapture2::BusManager busMgr_; ///< A FlyCapture2::BusManager that is responsible for finding the appropriate camera.
   FlyCapture2::Camera cam_; ///<  A FlyCapture2::Camera set by the bus manager.
   FlyCapture2::ImageMetadata metadata_; ///< Metadata from the last image, stores useful information such as timestamp, gain, shutter, brightness, exposure.
-  float exposure_time_; // Current exposure time in seconds.
+  double exposure_time_; // Current exposure time in seconds.
 
   boost::mutex mutex_; ///< A mutex to make sure that we don't try to grabImages while reconfiguring or vice versa.  Implemented with boost::mutex::scoped_lock.
   volatile bool captureRunning_; ///< A status boolean that checks if the camera has been started and is loading images into its buffer.ù
