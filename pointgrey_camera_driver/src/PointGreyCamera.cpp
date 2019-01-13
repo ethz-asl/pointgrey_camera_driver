@@ -38,7 +38,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 using namespace FlyCapture2;
 
 PointGreyCamera::PointGreyCamera():
-  busMgr_(), cam_()
+  busMgr_(), cam_(), exposure_time_(0.0)
 {
   serial_ = 0;
   captureRunning_ = false;
@@ -928,14 +928,14 @@ void PointGreyCamera::connect()
 
     // Enable metadata
     EmbeddedImageInfo info;
-    info.timestamp.onOff = true;
-    info.gain.onOff = true;
-    info.shutter.onOff = true;
-    info.brightness.onOff = true;
-    info.exposure.onOff = true;
-    info.whiteBalance.onOff = true;
+    info.timestamp.onOff = false;
+    info.gain.onOff = false;
+    info.shutter.onOff = false;
+    info.brightness.onOff = false;
+    info.exposure.onOff = false;
+    info.whiteBalance.onOff = false;
     info.frameCounter.onOff = true;
-    info.ROIPosition.onOff = true;
+    info.ROIPosition.onOff = false;
     error = cam_.SetEmbeddedImageInfo(&info);
     PointGreyCamera::handleError("PointGreyCamera::connect Could not enable metadata", error);
   }
@@ -976,6 +976,12 @@ bool PointGreyCamera::stop()
   return false;
 }
 
+typedef union _AbsValueConversion
+{
+uint32_t ulValue;
+float fValue;
+} AbsValueConversion;
+
 void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id)
 {
   boost::mutex::scoped_lock scopedLock(mutex_);
@@ -992,6 +998,12 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
     TimeStamp embeddedTime = rawImage.GetTimeStamp();
     image.header.stamp.sec = embeddedTime.seconds;
     image.header.stamp.nsec = 1000 * embeddedTime.microSeconds;
+
+    // Exposure time.
+    Property shutter;
+    shutter.type = SHUTTER;
+    cam_.GetProperty(&shutter);
+    exposure_time_ = shutter.absValue * 0.001;
 
     // Check the bits per pixel.
     uint8_t bitsPerPixel = rawImage.GetBitsPerPixel();
