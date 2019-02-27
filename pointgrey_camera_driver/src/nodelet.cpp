@@ -527,6 +527,7 @@ private:
             if(img_numbered_pub_.getNumSubscribers() > 0)
             {
               image_numbered_msgs::ImageNumberedPtr image(new image_numbered_msgs::ImageNumbered());
+              image->header = wfov_image->image.header;
               image->image = wfov_image->image;
               image->number = pg_.getMetadata().embeddedFrameCounter;
               image->exposure = pg_.getExposureTime();
