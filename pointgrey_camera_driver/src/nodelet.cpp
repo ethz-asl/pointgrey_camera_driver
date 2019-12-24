@@ -49,6 +49,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include <dynamic_reconfigure/server.h> // Needed for the dynamic_reconfigure gui service to run
 
+#include <cuckoo_time_translator/DeviceTimeTranslator.h>
+
 namespace pointgrey_camera_driver
 {
 
@@ -284,6 +286,13 @@ private:
                updater_,
                diagnostic_updater::FrequencyStatusParam(&min_freq_, &max_freq_, freq_tolerance, window_size),
                diagnostic_updater::TimeStampStatusParam(min_acceptable, max_acceptable)));
+
+    device_time_translator_.reset(new cuckoo_time_translator::DefaultDeviceTimeUnwrapperAndTranslator(
+          pg_.getHwClockParameters(),
+          nh.getNamespace(),
+          cuckoo_time_translator::Defaults().setFilterAlgorithm(cuckoo_time_translator::FilterAlgorithm::Kalman)
+        )
+    );
   }
 
   /*!
@@ -424,7 +433,8 @@ private:
             wfov_camera_msgs::WFOVImagePtr wfov_image(new wfov_camera_msgs::WFOVImage);
             // Get the image from the camera library
             NODELET_DEBUG("Starting a new grab from camera.");
-            pg_.grabImage(wfov_image->image, frame_id_);
+            uint32_t hw_timestamp = 0;
+            pg_.grabImage(wfov_image->image, frame_id_, &hw_timestamp);
 
             // Set other values
             wfov_image->header.frame_id = frame_id_;
@@ -435,8 +445,15 @@ private:
 
             wfov_image->temperature = pg_.getCameraTemperature();
 
-            //time in the image header is synced
-            wfov_image->header.stamp = wfov_image->image.header.stamp;
+            ros::Time time;
+            if(device_time_translator_){
+              time = device_time_translator_->update(hw_timestamp, wfov_image->image.header.stamp, 0.0);
+            } else {
+              time = ros::Time::now();
+            }
+
+            wfov_image->header.stamp = time;
+            wfov_image->image.header.stamp = time;
 
             // Set the CameraInfo message
             ci_.reset(new sensor_msgs::CameraInfo(cinfo_->getCameraInfo()));
@@ -543,6 +560,8 @@ private:
 
   /// Configuration:
   pointgrey_camera_driver::PointGreyConfig config_;
+
+  boost::shared_ptr<cuckoo_time_translator::DefaultDeviceTimeUnwrapperAndTranslator> device_time_translator_;
 };
 
 PLUGINLIB_EXPORT_CLASS(pointgrey_camera_driver::PointGreyCameraNodelet, nodelet::Nodelet);  // Needed for Nodelet declaration

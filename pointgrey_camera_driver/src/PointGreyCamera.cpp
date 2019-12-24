@@ -168,8 +168,8 @@ bool PointGreyCamera::setNewConfiguration(pointgrey_camera_driver::PointGreyConf
     default:
       retVal &= false;
   }
-
-
+	
+	
   switch (config.strobe2_polarity)
   {
     case pointgrey_camera_driver::PointGrey_Low:
@@ -974,7 +974,41 @@ bool PointGreyCamera::stop()
   return false;
 }
 
-void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id)
+
+uint32_t PointGreyCamera::getCyclesPerSecond() const {
+  return 8000;
+}
+
+uint32_t PointGreyCamera::getCyleOffsetsPerCycle() const {
+  return 3072;
+}
+
+uint32_t PointGreyCamera::getHwClockFrequencyHz() const {
+  return getCyclesPerSecond() * getCyleOffsetsPerCycle();
+}
+
+uint64_t PointGreyCamera::getHwTimeWrapNumber() const {
+  return 128L * getHwClockFrequencyHz();
+}
+
+cuckoo_time_translator::WrappingClockParameters PointGreyCamera::getHwClockParameters() const {
+  return cuckoo_time_translator::WrappingClockParameters(
+              getHwTimeWrapNumber(), getHwClockFrequencyHz()
+            );
+}
+
+uint32_t PointGreyCamera::computeCameraTimeInCycleOffsetUnit(const TimeStamp& embeddedTime) const {
+  return (
+              (embeddedTime.cycleSeconds * getCyclesPerSecond())  // corresponding to 8000 cycles
+              +
+              embeddedTime.cycleCount
+          ) * getCyleOffsetsPerCycle() // each cycle corresponds to 3072 cycle offset units
+          + embeddedTime.cycleOffset;
+}
+
+
+
+void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &frame_id, uint32_t* hw_timestamp)
 {
   boost::mutex::scoped_lock scopedLock(mutex_);
   if(cam_.IsConnected() && captureRunning_)
@@ -986,32 +1020,14 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
     PointGreyCamera::handleError("PointGreyCamera::grabImage Failed to retrieve buffer", error);
     metadata_ = rawImage.GetMetadata();
 
+    // Set header timestamp as embedded for now
+    TimeStamp embeddedTime = rawImage.GetTimeStamp();
+    image.header.stamp.sec = embeddedTime.seconds;
+    image.header.stamp.nsec = 1000 * embeddedTime.microSeconds;
 
-    TimeStamp currentTime = rawImage.GetTimeStamp();
-    int delta_cycle_seconds = currentTime.cycleSeconds - last_timestamp_.cycleSeconds;
-    if(delta_cycle_seconds < 0){
-      delta_cycle_seconds += kMaxCycleSeconds;
+    if(hw_timestamp){
+      *hw_timestamp = computeCameraTimeInCycleOffsetUnit(embeddedTime);
     }
-
-    int delta_cycle_count = currentTime.cycleCount - last_timestamp_.cycleCount;
-    if(delta_cycle_count < 0){
-      delta_cycle_count += kMaxCycleCount;
-    }
-
-    cumulative_timestamp_.microSeconds += delta_cycle_count*kCycleCountToUS; //will go over 1e6
-    cumulative_timestamp_.seconds += delta_cycle_seconds;
-    cumulative_timestamp_.microSeconds = cumulative_timestamp_.microSeconds%kSecondToUS;
-
-    last_timestamp_ = currentTime;
-
-    //get time in local clock
-    double device_time = cumulative_timestamp_.seconds + cumulative_timestamp_.microSeconds*1.0/kSecondToUS;
-    double local_time = ros::Time::now().toSec();
-
-    timesync_.updateFilter(device_time, local_time);
-    double updated_local_time = timesync_.getLocalTimestamp(device_time);
-
-    image.header.stamp = ros::Time(updated_local_time);
 
     // Check the bits per pixel.
     uint8_t bitsPerPixel = rawImage.GetBitsPerPixel();
@@ -1088,7 +1104,7 @@ void PointGreyCamera::grabImage(sensor_msgs::Image &image, const std::string &fr
   }
 }
 
-void PointGreyCamera::grabStereoImage(sensor_msgs::Image &image, const std::string &frame_id, sensor_msgs::Image &second_image, const std::string &second_frame_id)
+void PointGreyCamera::grabStereoImage(sensor_msgs::Image &image, const std::string &frame_id, sensor_msgs::Image &second_image, const std::string &second_frame_id, uint32_t* hw_timestamp)
 {
   boost::mutex::scoped_lock scopedLock(mutex_);
   if(cam_.IsConnected() && captureRunning_)
@@ -1104,6 +1120,10 @@ void PointGreyCamera::grabStereoImage(sensor_msgs::Image &image, const std::stri
     TimeStamp embeddedTime = rawImage.GetTimeStamp();
     image.header.stamp.sec = embeddedTime.seconds;
     image.header.stamp.nsec = 1000 * embeddedTime.microSeconds;
+
+    if(hw_timestamp){
+      *hw_timestamp = computeCameraTimeInCycleOffsetUnit(embeddedTime);
+    }
 
     // GetBitsPerPixel returns 16, but that seems to mean "2 8 bit pixels,
     // one for each image". Therefore, we don't use it
